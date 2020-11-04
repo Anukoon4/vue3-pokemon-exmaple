@@ -1,47 +1,48 @@
 <template>
-  <div class="cards">
-    <card v-for="starter in starters">
-      <template v-slot:title>
-        {{ starter.name }}
-      </template>
-      <template v-slot:image>
-        <img :src="starter.sprite" />
-      </template>
+  <PokemonCard 
+  :selectedId="selectedId" 
+  :pokemons="starters"
+   @pokemonClicked="fetchEvolution" />
 
-      <template v-slot:description>
-        <div v-for="type in starter.types">
-          {{ type }}
-        </div>
-      </template>
-    </card>
-  </div>
+  <PokemonCard :pokemons="evolutions" />
 </template>
 
 <script>
 import Card from './card.vue'
+import PokemonCard from './PokemonCard.vue'
 const api = 'https://pokeapi.co/api/v2/pokemon'
-const ids = [1, 4, 7]
+const STARTER_ID = [1, 4, 7]
 export default {
   components: {
     Card,
+    PokemonCard,
   },
   data() {
     return {
       starters: [],
+      evolutions: [],
+      selectedId: null,
     }
   },
-  created() {
-    this.fetchData()
+  async created() {
+    const startData = await this.fetchData(STARTER_ID)
+    this.starters = startData
   },
 
   methods: {
-    async fetchData() {
+    async fetchEvolution(pokemon) {
+      this.selectedId = pokemon.id
+      const evolutions = await this.fetchData([pokemon.id + 1, pokemon.id + 2])
+      this.evolutions = evolutions
+    },
+    async fetchData(ids) {
       const response = await Promise.all(
         ids.map((id) => window.fetch(api + '/' + id))
       )
       const data = await Promise.all(response.map((res) => res.json()))
-      this.starters = data.map((dataElement) => {
+      return data.map((dataElement) => {
         return {
+          id: dataElement.id,
           name: dataElement.name,
           sprite: dataElement.sprites.other['official-artwork'].front_default,
           types: dataElement.types.map((type) => type.type.name),
@@ -52,11 +53,4 @@ export default {
 }
 </script>
 
-<style scoped>
-.cards {
-  display: flex;
-}
-img {
-  width: 100%;
-}
-</style>
+<style scoped></style>
